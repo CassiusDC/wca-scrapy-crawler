@@ -112,8 +112,8 @@ class QuotesSpider(scrapy.Spider):
                                                 # 'returnurl': '/MemberSection',
                                                 # 'verifyurl': 'https://www.wcaworld.com/Account/SsoLoginResult/',
                                                 '__RequestVerificationToken': csrf_token,
-                                                'username':'goftptw',
-                                                'password': '471183',
+                                                'username':'user',
+                                                'password': 'pass',
                                                 'rememberme': "1"},
                                         callback=self.parse_after_login)
     

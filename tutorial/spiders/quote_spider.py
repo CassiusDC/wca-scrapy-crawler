@@ -7,6 +7,7 @@ import pandas as pd
 import time
 from scrapy.utils.response import open_in_browser
 from scrapy.shell import inspect_response
+from itemadapter import ItemAdapter
 
 #Declare variables to be exported
 company_country = []
@@ -33,7 +34,7 @@ contact_person_email = []
 contact_person2_email = []
 contact_person3_email = []
 contact_person4_email = []
-country_x = ""
+
 PAGES = [
             # #AU
             # 'https://www.wcaworld.com/Directory?siteID=24&au=m&pageIndex=1&pageSize=100&searchby=CountryCode&country=AU&city=&keyword=&orderby=CountryCity&networkIds=1&networkIds=2&networkIds=3&networkIds=4&networkIds=61&networkIds=98&networkIds=108&networkIds=5&networkIds=22&networkIds=13&networkIds=18&networkIds=15&networkIds=16&networkIds=38&networkIds=103&layout=v1&submitted=search',
@@ -288,44 +289,8 @@ PAGES = [
 class QuotesSpider(scrapy.Spider):
     name = "quotes"
     start_urls = ['https://www.wcaworld.com/Account/Login?']
-
-    #Closing Listener
-    def __init__(self):
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
-
-    #Spider Closing
-    def spider_closed(self, spider):
-        scraped_data = pd.DataFrame({
-            'country' : company_country,
-            'company_name': company_name,
-            'branch_name ': branch_name,
-            'address' : address,
-            'company_phone' : company_phone,
-            'company_fax' : company_fax,
-            'company_website' : company_website,
-            'company_email' : company_email,
-            'contact_person_name' : contact_person_name,
-            'contact_person_title' : contact_person_title,
-            'contact_person_phone' : contact_person_phone,
-            'contact_person_email' : contact_person_email,
-            'contact_person2_name' : contact_person2_name,
-            'contact_person2_title' : contact_person2_title,
-            'contact_person2_phone' : contact_person2_phone,
-            'contact_person2_email' : contact_person2_email,
-            'contact_person3_name' : contact_person3_name,
-            'contact_person3_title' : contact_person3_title,
-            'contact_person3_phone' : contact_person3_phone,
-            'contact_person3_email' : contact_person3_email,
-            'contact_person4_name' : contact_person4_name,
-            'contact_person4_title' : contact_person4_title,
-            'contact_person4_phone' : contact_person4_phone,
-            'contact_person4_email' : contact_person4_email,
-        })
-        scraped_data = scraped_data.replace(regex={r'\[\'': '', r'\']': '', r'\[]': '', r'[^a-zA-Z0-9 @\.\-\+]+': ''})
-        scraped_data = scraped_data.replace(regex={r'\[\'': r'\[\' '})
-        scraped_data = scraped_data.replace(regex={r'[^a-zA-Z0-9 @\.\-\+]+': ''})
-        scraped_data = scraped_data.replace('[]','')
-        scraped_data.to_excel("output_final3.xlsx")
+    country_x = ""
+       
         
 #SPIDER START      
     #Loop through directory listings
@@ -361,9 +326,9 @@ class QuotesSpider(scrapy.Spider):
     def parse_page(self, response):
         print("DETECTED: " + str(response.css('#navright > div.link_login.entry > a::text').extract()) + " BUTTON IN DIRECTORY LISTING PAGE")
         COMPANY_COUNTRY_SELECTOR = '//*[@id="directory_result"]/div/div[1]/b//text()'
-        country_x = response.xpath(COMPANY_COUNTRY_SELECTOR).extract()
-        
+        self.country_x = response.xpath(COMPANY_COUNTRY_SELECTOR).extract()
         SET_SELECTOR ='#directory_result > div > div.groupHQ > div.directory_search_group > div > ul > li > a::attr(href)'       
+        
         yield from response.follow_all(response.css(SET_SELECTOR), self.parse_listing)
 
         
@@ -380,14 +345,14 @@ class QuotesSpider(scrapy.Spider):
         COMPANY_WEBSITE_SELECTOR = '//*[@id="profilepage"]/div/div/div/div[contains(string(),"Website:")]/following-sibling::div[1]/a/node()[self::text()]'
         COMPANY_EMAIL_SELECTOR = '//*[@id="profilepage"]/div/div/div/div[contains(string(),"Email:")]/following-sibling::div[1]/a//text()'
     
-        company_country.append(country_x)
-        company_name.append(response.css(COMPANY_SELECTOR).extract())
-        branch_name.append(response.css(BRANCH_NAME_SELECTOR).extract())
-        address.append(response.css(ADDRESS_SELECTOR).extract())
-        company_phone.append(response.xpath(COMPANY_CONTACT_NUMBER_SELECTOR).extract())
-        company_fax.append(response.xpath(COMPANY_FAX_NUMBER_SELECTOR).extract())
-        company_website.append(response.xpath(COMPANY_WEBSITE_SELECTOR).extract())
-        company_email.append(response.xpath(COMPANY_EMAIL_SELECTOR).extract())
+        company_country.append(self.country_x)
+        company_name = response.css(COMPANY_SELECTOR).extract()
+        branch_name = response.css(BRANCH_NAME_SELECTOR).extract()
+        address = response.css(ADDRESS_SELECTOR).extract()
+        company_phone = response.xpath(COMPANY_CONTACT_NUMBER_SELECTOR).extract()
+        company_fax = response.xpath(COMPANY_FAX_NUMBER_SELECTOR).extract()
+        company_website = response.xpath(COMPANY_WEBSITE_SELECTOR).extract()
+        company_email = response.xpath(COMPANY_EMAIL_SELECTOR).extract()
 
         #Contact Person Loop
         contact_loop_ctr = 2
@@ -399,29 +364,55 @@ class QuotesSpider(scrapy.Spider):
             CONTACT_PERSON_EMAIL_SELECTOR = '//*[@id="contactperson"]/div['+str(contact_loop_ctr)+']/div/div/div/div[contains(string(),"Email")]/following-sibling::div//text()'
             #GET RID OF THE FREAKIN SPACES WHY ARE THERE SPACES ANYWAY?!
             if(contact_loop_ctr == 2):
-                contact_person_name.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip())
-                contact_person_title.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip())
-                contact_person_phone.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip())
-                contact_person_email.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip())
+                contact_person_name = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip()
+                contact_person_title = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip()
+                contact_person_phone = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip()
+                contact_person_email = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip()
                 
             elif(contact_loop_ctr == 3):
-                contact_person2_name.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip())
-                contact_person2_title.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip())
-                contact_person2_phone.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip())
-                contact_person2_email.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip())
+                contact_person2_name = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip()
+                contact_person2_title = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip()
+                contact_person2_phone = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip()
+                contact_person2_email = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip()
             elif(contact_loop_ctr == 4):
-                contact_person3_name.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip())
-                contact_person3_title.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip())
-                contact_person3_phone.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip())
-                contact_person3_email.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip())            
+                contact_person3_name = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip()
+                contact_person3_title = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip()
+                contact_person3_phone = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip()
+                contact_person3_email = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip()            
             elif(contact_loop_ctr == 5):
-                contact_person4_name.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip())
-                contact_person4_title.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip())
-                contact_person4_phone.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip())
-                contact_person4_email.append(re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip())            
+                contact_person4_name = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_NAME_SELECTOR).extract()))).strip()
+                contact_person4_title = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_TITLE_SELECTOR).extract()))).strip()
+                contact_person4_phone = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_PHONE_SELECTOR).extract()))).strip()
+                contact_person4_email = re.sub('\\\\r\\\\n','',re.sub(' +',' ',str(response.xpath(CONTACT_PERSON_EMAIL_SELECTOR).extract()))).strip()            
             
             contact_loop_ctr+=1
-        pass
+        yield{
+            "company_country": self.country_x,
+            "company_name": company_name,
+            "branch_name": branch_name,
+            "address":address,
+            "company_phone":company_phone,
+            "company_fax":company_fax,
+            "company_website":company_website,
+            "company_email":company_email,
+            "contact_person_name": contact_person_name,
+            "contact_person_title": contact_person_title,
+            "contact_person_phone": contact_person_phone,
+            "contact_person_email": contact_person_email,
+            "contact_person2_name": contact_person2_name,
+            "contact_person2_title": contact_person2_title,
+            "contact_person2_phone": contact_person2_phone,
+            "contact_person2_email": contact_person2_email,
+            "contact_person3_name": contact_person3_name,
+            "contact_person3_title": contact_person3_title,
+            "contact_person3_phone": contact_person3_phone,
+            "contact_person3_email": contact_person3_email,
+            "contact_person4_name": contact_person4_name,
+            "contact_person4_title": contact_person4_title,
+            "contact_person4_phone": contact_person4_phone,
+            "contact_person4_email": contact_person4_email,
+            
+        }
             
             
     

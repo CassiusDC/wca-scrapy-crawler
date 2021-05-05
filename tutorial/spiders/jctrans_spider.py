@@ -206,7 +206,7 @@ class JCTransSpider(scrapy.Spider): #neiw
 
         while(contact_loop_ctr <= 4):
             
-            CONTACT_PERSON_NAME_SELECTOR = '//*[@id="home"]/div[2]/div[2]/div[2]/div[1]/div[1]//text()'
+            CONTACT_PERSON_NAME_SELECTOR = '//*[@id="home"]/div[2]/div[2]/div[2]/div['+str(contact_loop_ctr)+']/div[1]//text()'
             CONTACT_PERSON_TITLE_SELECTOR = '#home > div.tab-p.kly > div.zlp.jku > div.zlf > div:nth-child('+ str(contact_loop_ctr)+') > div:nth-child(2) > div.lj.xv::text'
             CONTACT_PERSON_PHONE_SELECTOR = '#home > div.tab-p.kly > div.zlp.jku > div.zlf > div:nth-child('+ str(contact_loop_ctr)+') > div:nth-child(3) > div.lj.xv::text'
             CONTACT_PERSON_EMAIL_SELECTOR = '#home > div.tab-p.kly > div.zlp.jku > div.zlf > div:nth-child('+ str(contact_loop_ctr)+') > div:nth-child(4) > div.lj.xv::text'

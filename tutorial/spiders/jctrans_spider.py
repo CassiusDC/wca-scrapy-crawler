@@ -163,14 +163,6 @@ class JCTransSpider(scrapy.Spider): #neiw
                             
     
     def parse_after_login(self, response):
-        # if b" Sign Out " in response.body:
-        #     self.log("Successfully logged in. Let's start crawling!")
-        #     # Now the crawling can begin..
-        #     for url in PAGES:
-        #         yield scrapy.Request(url, callback=self.parse_page)
-        # else:
-        #     self.log("Bad times :(")
-            # Something went wrong, we couldn't log in, so nothing happens.
         for url in PAGES:
             yield scrapy.Request(url, callback=self.parse_page)
 

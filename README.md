@@ -1,1 +1,4 @@
-A crawler and formatter for WCAWorld's Directory Listing built on Scrapy's tutorial
+A crawler and formatter for WCAWorld and JCTrans Directory Listing built on Scrapy's tutorial
+
+
+run using `scrapy crawl quotes` for WCA, `scrapy crawl jctrans` for JCTrans

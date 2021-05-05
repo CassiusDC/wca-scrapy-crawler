@@ -127,7 +127,7 @@ PAGES = [
 
 
 ]
-class JCTransSpider(scrapy.Spider):
+class JCTransSpider(scrapy.Spider): #neiw
     name = "jctrans"
     start_urls = ['https://www.jctrans.net/Login/Login.html',]
        

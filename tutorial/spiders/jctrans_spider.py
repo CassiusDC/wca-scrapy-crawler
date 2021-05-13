@@ -58,7 +58,7 @@ class JCTransSpider(scrapy.Spider):
 
     def parse_after_login(self, response):
         for url in PAGES:
-            return scrapy.Request(url, callback=self.parse_after_login_country_listing)
+            yield scrapy.Request(url, callback=self.parse_after_login_country_listing)
         
     def parse_after_login_country_listing(self, response):
         COUNTRY_SELECTOR = "div > ul > a::attr(href)"

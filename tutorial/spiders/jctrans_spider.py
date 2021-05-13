@@ -10,7 +10,6 @@ from scrapy.utils.response import open_in_browser
 from scrapy.shell import inspect_response
 from itemadapter import ItemAdapter
 import json
-#Declare variables to be exported
 
 PAGES = [
     "https://www.jctrans.net/company/index.html",
@@ -57,46 +56,41 @@ class JCTransSpider(scrapy.Spider):
 
 
     def parse_after_login(self, response):
+        #Loop through links in PAGES
         for url in PAGES:
             yield scrapy.Request(url, callback=self.parse_after_login_country_listing)
         
     def parse_after_login_country_listing(self, response):
+        #Select every country/or chinese city
         COUNTRY_SELECTOR = "div > ul > a::attr(href)"
-        
-        print("Following " + response.css(COUNTRY_SELECTOR).extract_first())
-        list = response.css(COUNTRY_SELECTOR)
-        print(list)
-        yield from response.follow_all(list, self.parse_page)
+        print(COUNTRY_SELECTOR)
+        yield from response.follow_all(COUNTRY_SELECTOR, self.parse_page)
 
 
 
     def parse_page(self, response):
+        #Select companies
         SET_SELECTOR = 'div.left_contenty > div > div > div.col-md-7.center > div.titlel > a::attr(href)'
         NEXT_PAGE_SELECTOR = '/html/body/div/div/div/div/div/div/div/div/ul/li/a[contains(string(),"Next Page")]/@href'
-        SET_LOGIN_SELECTOR='//*[@id="dl"]/span[contains(text(),"SIGN IN")]'
 
         companies = response.css(SET_SELECTOR).extract()
-        print(companies)
         start_url = "https://www.jctrans.net/"
         for company in companies:
             company_url = start_url + company
             yield scrapy.Request(company_url, self.parse_listing)
         
+        #If there's a next page button, go next
         url = response.xpath(NEXT_PAGE_SELECTOR).extract_first()
         if url:
-            print("GOING TO NEXT PAGE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             yield scrapy.Request(url,self.parse_page)
 
     #Find information, append to array
     def parse_listing(self, response):
         print("DETECTED: " + str(response.css('#navright > div.link_login.entry > a::text').extract()) + " BUTTON IN COMPANY PAGE")
-        # open_in_browser(response)
         COMPANY_COUNTRY_SELECTOR = '//*[@id="home"]/div[1]/div[2]/div[2]/div[1]/div[2]//text()'
-        
         COMPANY_SELECTOR = 'div.titlel::text'
         no_of_employees_SELECTOR = '//*[@id="home"]/div/div/div/div/div[contains(string(),"Number of Employees:")]/following-sibling::div[1]/node()[self::text()]'
         ADDRESS_SELECTOR = '//*[@id="home"]/div[1]/div[2]/div[2]/div[2]/div[2]//text()'
-        
         COMPANY_CONTACT_PERSON_SELECTOR = '//*[@id="home"]/div/div[1]/div/div/div//text()'
         COMPANY_CONTACT_PERSON_TITLE_SELECTOR = '//*[@id="home"]/div/div[1]/div/div/div/div[contains(string(),"Job Title:")]/following-sibling::div[1]/node()[self::text()]'
         COMPANY_CONTACT_NUMBER_SELECTOR = '//*[@id="home"]/div/div[1]/div/div/div/div[contains(string(),"Tel:")]/following-sibling::div[1]/node()[self::text()]'
